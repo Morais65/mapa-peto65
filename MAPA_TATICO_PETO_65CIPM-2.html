@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MAPA TÁTICO · PETO 65ª CIPM</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0a0c10;
+    --panel:   #0f1218;
+    --border:  #1e2530;
+    --accent:  #00e5ff;
+    --danger:  #ff2d55;
+    --warn:    #ff9f0a;
+    --ok:      #30d158;
+    --text:    #e5e5ea;
+    --subtext: #8e8e93;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; z-index: 100;
+  }
+  .logo {
+    width: 34px; height: 34px; background: var(--danger); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #fff; line-height: 1.2; text-align: center; flex-shrink: 0;
+  }
+  .header-info { flex: 1; }
+  .header-info h1 { font-size: 15px; font-weight: 700; letter-spacing: 2px; }
+  .header-info p  { font-size: 10px; color: var(--subtext); font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
+  .badge-live { font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 3px 7px; border-radius: 4px; border: 1px solid var(--ok); color: var(--ok); letter-spacing: 1px; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  .sidebar {
+    width: 270px; background: var(--panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+  .sb-section { padding: 12px 13px; border-bottom: 1px solid var(--border); }
+  .sb-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--subtext); text-transform: uppercase; margin-bottom: 9px; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px; text-align: center; }
+  .stat-n { font-family: 'Share Tech Mono', monospace; font-size: 22px; line-height: 1; }
+  .stat-l { font-size: 9px; color: var(--subtext); letter-spacing: 1px; margin-top: 2px; }
+
+  .filters { display: flex; flex-direction: column; gap: 5px; }
+  .f-item { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all .15s; font-size: 13px; }
+  .f-item:hover { border-color: var(--accent); background: rgba(0,229,255,.04); }
+  .f-item.on { border-color: var(--accent); background: rgba(0,229,255,.08); }
+  .f-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .f-count { margin-left: auto; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--subtext); }
+
+  .layer-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; font-size: 13px; cursor: pointer; }
+  .tog { width: 34px; height: 19px; background: var(--border); border-radius: 10px; position: relative; transition: background .2s; flex-shrink: 0; }
+  .tog.on { background: var(--accent); }
+  .tog::after { content: ''; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; background: #fff; border-radius: 50%; transition: left .2s; }
+  .tog.on::after { left: 17px; }
+
+  .occ-list { flex: 1; overflow-y: auto; padding: 7px; }
+  .occ-list::-webkit-scrollbar { width: 3px; }
+  .occ-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .occ-card { border: 1px solid var(--border); border-left: 3px solid transparent; border-radius: 7px; padding: 9px; margin-bottom: 5px; cursor: pointer; transition: all .15s; }
+  .occ-card:hover { background: rgba(255,255,255,.03); }
+  .occ-top { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+  .occ-badge { font-size: 8px; letter-spacing: 1px; font-weight: 700; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
+  .occ-time { margin-left: auto; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--subtext); }
+  .occ-bairro { font-size: 13px; font-weight: 600; }
+  .occ-local  { font-size: 11px; color: var(--subtext); }
+
+  #map { flex: 1; }
+
+  .iw { font-family: 'Rajdhani', sans-serif; color: #e5e5ea; width: 280px; background: #0f1218; border-radius: 10px; overflow: hidden; }
+  .iw-head { padding: 11px 13px 9px; border-bottom: 1px solid #1e2530; display: flex; align-items: center; gap: 8px; }
+  .iw-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .iw-tipo { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .iw-id   { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #636366; }
+  .iw-body { padding: 11px 13px; background: #0f1218; }
+  .iw-row  { display: flex; gap: 6px; margin-bottom: 5px; font-size: 12px; }
+  .iw-lbl  { color: #636366; width: 65px; flex-shrink: 0; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; padding-top: 2px; }
+  .iw-val  { color: #e5e5ea; flex: 1; line-height: 1.4; }
+  .iw-resumo { background: #0a0c10; border: 1px solid #1e2530; border-radius: 5px; padding: 7px 9px; font-size: 11px; color: #aeaeb2; line-height: 1.5; margin-top: 4px; max-height: 90px; overflow-y: auto; }
+  .iw-sec-title { font-size: 9px; color: #636366; text-transform: uppercase; letter-spacing: .5px; margin: 7px 0 3px; }
+
+  .bottom-bar { display: none; background: var(--panel); border-top: 1px solid var(--border); padding: 8px 12px; gap: 7px; }
+  .bb-btn { flex: 1; padding: 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all .15s; }
+  .bb-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,.08); }
+
+  .drawer { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--border); border-radius: 14px 14px 0 0; z-index: 500; padding: 14px; max-height: 72dvh; overflow-y: auto; transform: translateY(100%); transition: transform .3s ease; }
+  .drawer.open { transform: translateY(0); }
+  .drawer-handle { width: 34px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 14px; cursor: pointer; }
+
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .bottom-bar { display: flex; }
+    .drawer { display: block; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">PM<br>BA</div>
+    <div class="header-info">
+      <h1>MAPA TÁTICO</h1>
+      <p>PETO · 65ª CIPM · FEIRA DE SANTANA</p>
+    </div>
+    <span class="badge-live">● LIVE</span>
+  </header>
+
+  <div class="body">
+    <div class="sidebar">
+      <div class="sb-section">
+        <div class="sb-title">Estatísticas</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-n" style="color:var(--accent)" id="tot">0</div><div class="stat-l">TOTAL</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--danger)" id="cnt-hom">0</div><div class="stat-l">HOMICÍDIOS</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--warn)" id="cnt-vtr">0</div><div class="stat-l">VEÍCULOS</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--subtext)">MAR</div><div class="stat-l">MÊS</div></div>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Filtrar por tipo</div>
+        <div class="filters" id="filters"></div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-title">Camadas</div>
+        <div class="layer-row" onclick="toggleHeat()"><span>Mapa de Calor</span><div class="tog" id="tog-heat"></div></div>
+        <div class="layer-row" onclick="toggleMarkers()"><span>Marcadores</span><div class="tog on" id="tog-mark"></div></div>
+      </div>
+      <div class="occ-list" id="occ-list"></div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div class="bottom-bar" id="bottom-bar">
+    <button class="bb-btn on" onclick="openDrawer('filtros', this)">Filtros</button>
+    <button class="bb-btn" onclick="openDrawer('lista', this)">Lista</button>
+    <button class="bb-btn" onclick="openDrawer('camadas', this)">Camadas</button>
+  </div>
+</div>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-handle" onclick="closeDrawer()"></div>
+  <div id="drawer-content"></div>
+</div>
+
+<script>
+const OCS = [
+  {
+    id:"OC-001", tipo:"Homicídio",
+    data:"12/03/2026", hora:"02:40",
+    local:"Rua Jazidas, nº 20", bairro:"Campo Limpo",
+    recurso:"VTR Lobo 07", vitima:"Jadson da Silva Santos, 29 anos",
+    autor:"03 indivíduos não identificados", material:"—",
+    resumo:"Por volta das 02h40, guarnição acionada pelo CICOM para verificar disparos de arma de fogo. Solicitante Claudiane Menezes Bastos, 29 anos, informou que 03 indivíduos invadiram a residência e atiraram no namorado Jadson da Silva Santos, 29 anos, que veio a óbito no local. DPT: Del. Fabrício | Esc. Dayse | Inv. Ozair e Clodoaldo | Per. Téc. Antonio Nilton | Per. Crim. Josemar.",
+    providencias:"Levantamento cadavérico pelo DPT.",
+    fonte:"VTR Lobo 07",
+    lat:-12.21619, lng:-38.98324,
+    cor:"#ff2d55", emoji:"🔴"
+  },
+  {
+    id:"OC-002", tipo:"Localiz./Recup. Veículo",
+    data:"12/03/2026", hora:"11:10",
+    local:"Rua 31, Qd 22, Cond. Campo Belo", bairro:"Campo do Gado Novo",
+    recurso:"VTR 4 rodas (Lobo 06)", vitima:"—", autor:"—",
+    material:"VW Gol preto – Placa JSQ-5761 | Chassi 9BWABO5U2AP049578",
+    resumo:"Por volta das 11h10, guarnição acionada via CICOM para averiguar veículo abandonado desde a madrugada. Localizado VW Gol cor preta, placa JSQ-5761. Consulta revelou restrição de roubo. Ocorrência: 00196054/2026.",
+    providencias:"Veículo apresentado na DRFR – Complexo Jomafa. IPC: Márcio Silva de Araújo.",
+    fonte:"Lobo 06",
+    lat:-12.22406, lng:-39.00814,
+    cor:"#ff9f0a", emoji:"🟠"
+  }
+];
+
+// ── TABELA DE TIPOS: emoji + cor ──────────────────────────
+const TIPOS_CONFIG = {
+  "Apreensão de arma":        { emoji: "🔫", cor: "#30d158" },
+  "Disparo de arma":          { emoji: "🔫", cor: "#ff2d55" },
+  "Auto de resistência":      { emoji: "🔫", cor: "#ff2d55" },
+  "Recuperação de veículo":   { emoji: "🚗", cor: "#30d158" },
+  "Roubo de veículo":         { emoji: "🚗", cor: "#ff2d55" },
+  "Furto de veículo":         { emoji: "🚗", cor: "#ff2d55" },
+  "Homicídio":                { emoji: "🧍", cor: "#ff2d55" },
+  "Tentativa de homicídio":   { emoji: "🧍", cor: "#ff2d55" },
+  "Tráfico de drogas":        { emoji: "🚬", cor: "#8B4513" },
+  "Localiz./Recup. Veículo":  { emoji: "🚗", cor: "#30d158" },
+};
+
+// Aplica config nos dados
+OCS.forEach(oc => {
+  const cfg = TIPOS_CONFIG[oc.tipo];
+  if (cfg) { oc.cor = cfg.cor; oc.emoji = cfg.emoji; }
+});
+
+const tipos = [...new Set(OCS.map(o => o.tipo))];
+const filtros = new Set(tipos);
+let map, heatLayer, markersMap = {}, heatOn = false, markersOn = true;
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: -12.220, lng: -38.996 },
+    zoom: 13,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    styles: [
+      {elementType:"geometry",stylers:[{color:"#0a0c10"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#0a0c10"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#636366"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#1e2530"}]},
+      {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#0f1218"}]},
+      {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#8e8e93"}]},
+      {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#2a3240"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#050709"}]},
+      {featureType:"poi",stylers:[{visibility:"off"}]},
+      {featureType:"transit",stylers:[{visibility:"off"}]},
+      {featureType:"landscape",elementType:"geometry",stylers:[{color:"#0d1017"}]},
+      {featureType:"administrative",elementType:"geometry.stroke",stylers:[{color:"#1e2530"}]},
+      {featureType:"administrative.locality",elementType:"labels.text.fill",stylers:[{color:"#8e8e93"}]}
+    ]
+  });
+
+  OCS.forEach(oc => {
+    const icones = {
+      "🔫": `<path fill="white" d="M8 14h2v2H8zm14-6h-2V6h-6v2H6a2 2 0 00-2 2v6a2 2 0 002 2h1l1 4h6l1-4h1a2 2 0 002-2v-1h2v-4h-2V8zm-2 8H6v-6h14v6z"/>`,
+      "🚗": `<path fill="white" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5zm-2-2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-10 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>`,
+      "🧍": `<path fill="white" d="M12 2a2 2 0 110 4 2 2 0 010-4zm-1 18v-6H9l2-6h2l2 6h-2v6h-2z"/>`,
+      "🚬": `<path fill="white" d="M2 16h14v3H2zm15 0h3v3h-3zm1-4c1.1 0 2-.9 2-2s-.9-2-2-2h-1c-.55 0-1-.45-1-1V5h-2v2c0 1.66 1.34 3 3 3h1c0 1.1.9 2 2 2v2z"/>`,
+    };
+
+    const iconePath = icones[oc.emoji] || icones["🧍"];
+    const pinSvg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
+        <ellipse cx="22" cy="49" rx="7" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+        <circle cx="22" cy="20" r="19" fill="${oc.cor}"/>
+        <svg x="11" y="9" width="22" height="22" viewBox="0 0 24 24">${iconePath}</svg>
+      </svg>`;
+    const blob = new Blob([pinSvg], {type: 'image/svg+xml'});
+    const url  = URL.createObjectURL(blob);
+
+    const marker = new google.maps.Marker({
+      position: {lat: oc.lat, lng: oc.lng},
+      map: map,
+      title: oc.tipo,
+      icon: { url, scaledSize: new google.maps.Size(44, 52), anchor: new google.maps.Point(22, 50) }
+    });
+
+    const iw = new google.maps.InfoWindow({ content: buildIW(oc), maxWidth: 300 });
+    marker.addListener('click', () => {
+      Object.values(markersMap).forEach(m => m.iw.close());
+      iw.open(map, marker);
+    });
+    markersMap[oc.id] = { marker, iw, oc };
+  });
+
+  heatLayer = new google.maps.visualization.HeatmapLayer({
+    data: OCS.map(oc => new google.maps.LatLng(oc.lat, oc.lng)),
+    map: null, radius: 60, opacity: 0.7,
+    gradient: ['rgba(0,0,0,0)','rgba(255,159,10,0.4)','rgba(255,107,53,0.7)','rgba(255,45,85,1)']
+  });
+
+  buildUI();
+}
+
+function buildIW(oc) {
+  return `<div class="iw">
+    <div class="iw-head">
+      <div class="iw-icon" style="background:${oc.cor}22;color:${oc.cor}">${oc.emoji}</div>
+      <div>
+        <div class="iw-tipo" style="color:${oc.cor}">${oc.tipo.toUpperCase()}</div>
+        <div class="iw-id">${oc.id} · CPR-LESTE · 65ª CIPM</div>
+      </div>
+    </div>
+    <div class="iw-body">
+      <div class="iw-row"><div class="iw-lbl">Data/Hora</div><div class="iw-val">${oc.data} às ${oc.hora}</div></div>
+      <div class="iw-row"><div class="iw-lbl">Local</div><div class="iw-val">${oc.local}</div></div>
+      <div class="iw-row"><div class="iw-lbl">Bairro</div><div class="iw-val">${oc.bairro}</div></div>
+      <div class="iw-row"><div class="iw-lbl">Recurso</div><div class="iw-val">${oc.recurso}</div></div>
+      <div class="iw-row"><div class="iw-lbl">Vítima</div><div class="iw-val">${oc.vitima}</div></div>
+      ${oc.material!=='—'?`<div class="iw-row"><div class="iw-lbl">Material</div><div class="iw-val">${oc.material}</div></div>`:''}
+      <div class="iw-row"><div class="iw-lbl">Fonte</div><div class="iw-val">${oc.fonte}</div></div>
+      <div class="iw-sec-title">Resumo</div>
+      <div class="iw-resumo">${oc.resumo}</div>
+      ${oc.providencias?`<div class="iw-sec-title">Providências</div><div class="iw-resumo">${oc.providencias}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function buildUI() {
+  document.getElementById('tot').textContent = OCS.length;
+  document.getElementById('cnt-hom').textContent = OCS.filter(o=>o.tipo==='Homicídio').length;
+  document.getElementById('cnt-vtr').textContent = OCS.filter(o=>o.tipo.includes('Veículo')).length;
+  buildFilters('filters');
+  renderLista('occ-list');
+}
+
+function buildFilters(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  tipos.forEach(tipo => {
+    const oc = OCS.find(o=>o.tipo===tipo);
+    const count = OCS.filter(o=>o.tipo===tipo).length;
+    const div = document.createElement('div');
+    div.className = 'f-item'+(filtros.has(tipo)?' on':'');
+    div.dataset.tipo = tipo;
+    div.innerHTML = `<div class="f-dot" style="background:${oc.cor}"></div><span>${tipo}</span><span class="f-count">${count}</span>`;
+    div.addEventListener('click', () => {
+      filtros.has(tipo)?filtros.delete(tipo):filtros.add(tipo);
+      document.querySelectorAll(`[data-tipo="${tipo}"]`).forEach(e=>e.classList.toggle('on',filtros.has(tipo)));
+      atualizarMapa();
+    });
+    el.appendChild(div);
+  });
+}
+
+function renderLista(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  OCS.filter(o=>filtros.has(o.tipo)).forEach(oc => {
+    const div = document.createElement('div');
+    div.className = 'occ-card';
+    div.style.borderLeftColor = oc.cor;
+    div.innerHTML = `
+      <div class="occ-top">
+        <span class="occ-badge" style="background:${oc.cor}22;color:${oc.cor}">${oc.tipo}</span>
+        <span class="occ-time">${oc.hora}</span>
+      </div>
+      <div class="occ-bairro">${oc.bairro}</div>
+      <div class="occ-local">${oc.local}</div>`;
+    div.addEventListener('click', () => {
+      map.panTo({lat:oc.lat,lng:oc.lng});
+      map.setZoom(16);
+      Object.values(markersMap).forEach(m=>m.iw.close());
+      markersMap[oc.id].iw.open(map, markersMap[oc.id].marker);
+      closeDrawer();
+    });
+    el.appendChild(div);
+  });
+}
+
+function atualizarMapa() {
+  Object.values(markersMap).forEach(({marker,oc}) => marker.setVisible(filtros.has(oc.tipo)&&markersOn));
+  renderLista('occ-list');
+}
+
+function toggleHeat() {
+  heatOn = !heatOn;
+  document.querySelectorAll('#tog-heat,#m-heat').forEach(t=>t.classList.toggle('on',heatOn));
+  heatLayer.setMap(heatOn?map:null);
+}
+
+function toggleMarkers() {
+  markersOn = !markersOn;
+  document.querySelectorAll('#tog-mark,#m-mark').forEach(t=>t.classList.toggle('on',markersOn));
+  Object.values(markersMap).forEach(({marker,oc})=>marker.setVisible(markersOn&&filtros.has(oc.tipo)));
+}
+
+function openDrawer(tipo, btn) {
+  document.querySelectorAll('.bb-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  const content = document.getElementById('drawer-content');
+  if(tipo==='filtros') {
+    content.innerHTML = `<div class="sb-title" style="margin-bottom:10px">FILTRAR POR TIPO</div><div class="filters" id="m-filters"></div>`;
+    buildFilters('m-filters');
+  } else if(tipo==='lista') {
+    content.innerHTML = `<div class="sb-title" style="margin-bottom:10px">OCORRÊNCIAS</div><div id="m-list" class="occ-list" style="max-height:50dvh;overflow-y:auto"></div>`;
+    renderLista('m-list');
+  } else if(tipo==='camadas') {
+    content.innerHTML = `
+      <div class="sb-title" style="margin-bottom:10px">CAMADAS</div>
+      <div class="layer-row" onclick="toggleHeat()"><span>Mapa de Calor</span><div class="tog ${heatOn?'on':''}" id="m-heat"></div></div>
+      <div class="layer-row" onclick="toggleMarkers()"><span>Marcadores</span><div class="tog ${markersOn?'on':''}" id="m-mark"></div></div>`;
+  }
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+</script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCabMsGVc7ucVZNbAFGPTrCsveQbJlCOGU&libraries=visualization&callback=initMap"></script>
+</body>
+</html>
