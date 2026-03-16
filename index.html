@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MAPA TÁTICO · PETO 65ª CIPM</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0c10;--panel:#0f1218;--border:#1e2530;--accent:#00e5ff;--danger:#ff2d55;--warn:#ff9f0a;--ok:#30d158;--text:#e5e5ea;--subtext:#8e8e93;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow:hidden;}
+  .app{display:flex;flex-direction:column;height:100dvh;}
+  header{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:100;}
+  .logo{width:34px;height:34px;background:var(--danger);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:#fff;line-height:1.2;text-align:center;flex-shrink:0;}
+  .header-info{flex:1;}
+  .header-info h1{font-size:15px;font-weight:700;letter-spacing:2px;}
+  .header-info p{font-size:10px;color:var(--subtext);font-family:'Share Tech Mono',monospace;letter-spacing:1px;}
+  .badge-live{font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 7px;border-radius:4px;border:1px solid var(--ok);color:var(--ok);letter-spacing:1px;animation:blink 2s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+  .body{display:flex;flex:1;overflow:hidden;}
+  .sidebar{width:270px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+  .sb-section{padding:12px 13px;border-bottom:1px solid var(--border);}
+  .sb-title{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--subtext);text-transform:uppercase;margin-bottom:9px;}
+  .cam-tabs{display:flex;gap:4px;margin-bottom:0;}
+  .cam-tab{flex:1;padding:5px 4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--subtext);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+  .cam-tab.on{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.08);}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .stat{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px;text-align:center;}
+  .stat-n{font-family:'Share Tech Mono',monospace;font-size:22px;line-height:1;}
+  .stat-l{font-size:9px;color:var(--subtext);letter-spacing:1px;margin-top:2px;}
+  .filters{display:flex;flex-direction:column;gap:5px;}
+  .f-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;font-size:13px;}
+  .f-item:hover{border-color:var(--accent);background:rgba(0,229,255,.04);}
+  .f-item.on{border-color:var(--accent);background:rgba(0,229,255,.08);}
+  .f-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .f-count{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--subtext);}
+  .layer-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;cursor:pointer;}
+  .tog{width:34px;height:19px;background:var(--border);border-radius:10px;position:relative;transition:background .2s;flex-shrink:0;}
+  .tog.on{background:var(--accent);}
+  .tog::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;background:#fff;border-radius:50%;transition:left .2s;}
+  .tog.on::after{left:17px;}
+  .occ-list{flex:1;overflow-y:auto;padding:7px;}
+  .occ-list::-webkit-scrollbar{width:3px;}
+  .occ-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  .occ-card{border:1px solid var(--border);border-left:3px solid transparent;border-radius:7px;padding:9px;margin-bottom:5px;cursor:pointer;transition:all .15s;}
+  .occ-card:hover{background:rgba(255,255,255,.03);}
+  .occ-top{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+  .occ-badge{font-size:8px;letter-spacing:1px;font-weight:700;padding:2px 5px;border-radius:3px;text-transform:uppercase;}
+  .occ-time{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--subtext);}
+  .occ-bairro{font-size:13px;font-weight:600;}
+  .occ-local{font-size:11px;color:var(--subtext);}
+  #map{flex:1;}
+  .iw{font-family:'Rajdhani',sans-serif;color:#e5e5ea;width:290px;background:#0f1218;border-radius:10px;overflow:hidden;}
+  .iw-head{padding:11px 13px 9px;border-bottom:1px solid #1e2530;display:flex;align-items:center;gap:8px;}
+  .iw-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+  .iw-tipo{font-size:13px;font-weight:700;line-height:1.2;}
+  .iw-id{font-family:'Share Tech Mono',monospace;font-size:9px;color:#636366;}
+  .iw-body{padding:11px 13px;background:#0f1218;}
+  .iw-row{display:flex;gap:6px;margin-bottom:5px;font-size:12px;}
+  .iw-lbl{color:#636366;width:75px;flex-shrink:0;font-size:9px;letter-spacing:.5px;text-transform:uppercase;padding-top:2px;}
+  .iw-val{color:#e5e5ea;flex:1;line-height:1.4;}
+  .iw-resumo{background:#0a0c10;border:1px solid #1e2530;border-radius:5px;padding:7px 9px;font-size:11px;color:#aeaeb2;line-height:1.5;margin-top:4px;max-height:80px;overflow-y:auto;}
+  .iw-sec-title{font-size:9px;color:#636366;text-transform:uppercase;letter-spacing:.5px;margin:7px 0 3px;}
+  .area-legend{display:flex;flex-direction:column;gap:6px;}
+  .area-item{display:flex;align-items:center;gap:8px;font-size:13px;}
+  .area-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+  .bottom-bar{display:none;background:var(--panel);border-top:1px solid var(--border);padding:8px 12px;gap:7px;}
+  .bb-btn{flex:1;padding:9px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;letter-spacing:.5px;cursor:pointer;text-transform:uppercase;transition:all .15s;}
+  .bb-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.08);}
+  .drawer{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--border);border-radius:14px 14px 0 0;z-index:500;padding:14px;max-height:75dvh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease;}
+  .drawer.open{transform:translateY(0);}
+  .drawer-handle{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px;cursor:pointer;}
+  @media(max-width:640px){.sidebar{display:none;}.bottom-bar{display:flex;}.drawer{display:block;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">PM<br>BA</div>
+    <div class="header-info">
+      <h1>MAPA TÁTICO</h1>
+      <p>PETO · 65ª CIPM · FEIRA DE SANTANA</p>
+    </div>
+    <span class="badge-live">● LIVE</span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--subtext);letter-spacing:.5px;text-align:right;line-height:1.5;">ATU.<br>16/03/2026<br>23:47</span>
+  </header>
+  <div class="body">
+    <div class="sidebar">
+      <div class="sb-section">
+        <div class="sb-title">Camadas</div>
+        <div class="cam-tabs">
+          <button class="cam-tab on" onclick="switchCamada('releases',this)">Releases</button>
+          <button class="cam-tab" onclick="switchCamada('suspeitos',this)">Suspeitos</button>
+          <button class="cam-tab" onclick="switchCamada('areas',this)">Áreas</button>
+        </div>
+      </div>
+      <div id="panel-releases" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="sb-section">
+          <div class="sb-title">Estatísticas — Março/2026</div>
+          <div class="stats">
+            <div class="stat"><div class="stat-n" style="color:var(--accent)" id="tot">0</div><div class="stat-l">TOTAL</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--danger)" id="cnt-hom">0</div><div class="stat-l">HOMICÍDIOS</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--ok)" id="cnt-vtr">0</div><div class="stat-l">RECUPERAÇÕES</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--warn)" id="cnt-traf">0</div><div class="stat-l">TRÁFICO</div></div>
+          </div>
+        </div>
+        <div class="sb-section">
+          <div class="sb-title">Filtrar por tipo</div>
+          <div class="filters" id="filters"></div>
+        </div>
+        <div class="sb-section">
+          <div class="sb-title">Visualização</div>
+          <div class="layer-row" onclick="toggleHeat()"><span>Mapa de Calor</span><div class="tog" id="tog-heat"></div></div>
+          <div class="layer-row" onclick="toggleReleases()"><span>Marcadores</span><div class="tog on" id="tog-rel"></div></div>
+        </div>
+        <div class="occ-list" id="occ-list"></div>
+      </div>
+      <div id="panel-suspeitos" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="sb-section">
+          <div class="sb-title">Suspeitos cadastrados</div>
+          <div class="stats">
+            <div class="stat"><div class="stat-n" style="color:var(--warn)" id="tot-susp">0</div><div class="stat-l">CADASTRADOS</div></div>
+            <div class="stat"><div class="stat-n" style="color:var(--danger)" id="tot-susp-fac">0</div><div class="stat-l">C/ FACÇÃO</div></div>
+          </div>
+        </div>
+        <div class="sb-section">
+          <div class="sb-title">Visualização</div>
+          <div class="layer-row" onclick="toggleSuspeitos()"><span>Marcadores</span><div class="tog on" id="tog-susp"></div></div>
+        </div>
+        <div class="occ-list" id="susp-list"></div>
+      </div>
+      <div id="panel-areas" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="sb-section">
+          <div class="sb-title">Facções mapeadas</div>
+          <div class="area-legend">
+            <div class="area-item"><div class="area-swatch" style="background:#30d158"></div><span>PCC</span></div>
+            <div class="area-item"><div class="area-swatch" style="background:#ff2d55"></div><span>CV — Comando Vermelho</span></div>
+            <div class="area-item"><div class="area-swatch" style="background:#0a84ff"></div><span>BDM — Bonde do Maluco</span></div>
+          </div>
+        </div>
+        <div class="sb-section">
+          <div class="sb-title">Visualização</div>
+          <div class="layer-row" onclick="toggleAreas()"><span>Áreas faccionadas</span><div class="tog on" id="tog-area"></div></div>
+        </div>
+        <div class="occ-list" id="area-list"></div>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+  <div class="bottom-bar">
+    <button class="bb-btn on" onclick="openDrawer('camadas',this)">Camadas</button>
+    <button class="bb-btn" onclick="openDrawer('filtros',this)">Filtros</button>
+    <button class="bb-btn" onclick="openDrawer('lista',this)">Lista</button>
+    <button class="bb-btn" onclick="openDrawer('legenda',this)">Legenda</button>
+  </div>
+</div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle" onclick="closeDrawer()"></div>
+  <div id="drawer-content"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// RELEASES — 17 ocorrências
+// ══════════════════════════════════════════════
+const OCS = [
+  {id:"OC-001",tipo:"Recuperação de veículo",data:"12/03/2026",hora:"11:10",local:"Rua 31, Qd 22, Cond. Campo Belo",bairro:"Campo do Gado Novo",viatura:"LOBO 06",autor:"Não identificado",vitima:"Não identificado",material:"Gol preto – JSQ5761",apresentacao:"DRFR",boletim:"00196054/2026",lat:-12.224069,lng:-39.008142},
+  {id:"OC-002",tipo:"Recuperação de veículo",data:"10/03/2026",hora:"21:30",local:"Rua da Paz",bairro:"Campo do Gado Novo",viatura:"PETO 65",autor:"—",vitima:"—",material:"Ônix branco – RFZ7I90",apresentacao:"—",boletim:"—",lat:-12.21994,lng:-39.00095},
+  {id:"OC-003",tipo:"Homicídio",data:"11/03/2026",hora:"20:15",local:"Fundo do Condomínio Caraíbas",bairro:"Campo do Gado Novo",viatura:"LOBO 07",autor:"Não identificado",vitima:"Victor Antônio de Brito Tagnin",material:"—",apresentacao:"DPT",boletim:"—",lat:-12.2227,lng:-38.99809},
+  {id:"OC-004",tipo:"Recuperação de veículo",data:"11/03/2026",hora:"08:40",local:"Rua Ricardo Oliveira",bairro:"Gabriela",viatura:"PETO 65",autor:"—",vitima:"—",material:"PFC2400 / QTY1D01 / TML6C71",apresentacao:"DRFR",boletim:"—",lat:-12.22681,lng:-38.99157},
+  {id:"OC-005",tipo:"Disparo de arma",data:"12/03/2026",hora:"22:20",local:"Rua Caminho das Índias",bairro:"Gabriela",viatura:"LOBO 06",autor:"—",vitima:"—",material:"—",apresentacao:"—",boletim:"—",lat:-12.2334032,lng:-38.9907767},
+  {id:"OC-006",tipo:"Tráfico de drogas",data:"12/03/2026",hora:"19:40",local:"Rua Rio de Janeiro, 90",bairro:"Maria Quitéria",viatura:"Motopatrulhamento",autor:"Taylane Cerqueira Lima / Marineide de Jesus Noel",vitima:"—",material:"—",apresentacao:"—",boletim:"—",lat:-12.1470271,lng:-38.9916795},
+  {id:"OC-007",tipo:"Homicídio",data:"02/03/2026",hora:"07:50",local:"Estrada da Cavalaria",bairro:"Maria Quitéria",viatura:"PETO 65",autor:"Renato Souza do Carmo",vitima:"Eliane Matos Santana",material:"—",apresentacao:"DPT",boletim:"—",lat:-12.16321,lng:-38.98548},
+  {id:"OC-008",tipo:"Homicídio",data:"06/03/2026",hora:"19:46",local:"Rua Joana Pereira da Silva, 128",bairro:"Pampalona",viatura:"LOBO 06",autor:"Não identificado",vitima:"Edmilson Pedro da Silva",material:"—",apresentacao:"DPT",boletim:"—",lat:-12.2161023,lng:-38.987699},
+  {id:"OC-009",tipo:"Homicídio",data:"12/03/2026",hora:"02:40",local:"Rua Jazidas, 20",bairro:"Campo Limpo",viatura:"LOBO 07",autor:"Não identificado",vitima:"Jadson da Silva Santos",material:"—",apresentacao:"DPT",boletim:"—",lat:-12.2161937,lng:-38.9832424},
+  {id:"OC-010",tipo:"Tentativa de homicídio",data:"08/03/2026",hora:"20:15",local:"Rua Ipiúna",bairro:"Campo Limpo",viatura:"LOBO 05",autor:"XX",vitima:"Robson de Jesus Oliveira",material:"—",apresentacao:"—",boletim:"—",lat:-12.2158293,lng:-38.9783064},
+  {id:"OC-011",tipo:"Recuperação de veículo",data:"07/03/2026",hora:"20:30",local:"Rua Satélite",bairro:"George Américo",viatura:"PETO 65",autor:"—",vitima:"—",material:"CB Twister",apresentacao:"—",boletim:"182038/2026",lat:-12.2221012,lng:-38.9756526},
+  {id:"OC-012",tipo:"Homicídio",data:"07/03/2026",hora:"19:15",local:"Rua Jaguará, 12",bairro:"Campo Limpo",viatura:"LOBO 07",autor:"Não identificado",vitima:"Félix Sena Lima",material:"—",apresentacao:"—",boletim:"—",lat:-12.2100454,lng:-38.9696743},
+  {id:"OC-013",tipo:"Apreensão de arma",data:"08/03/2026",hora:"00:45",local:"Rua Brumado",bairro:"Jardim Cruzeiro",viatura:"LOBO 08",autor:"—",vitima:"—",material:"Pop100 / PT92 / Maconha",apresentacao:"CENFLAG",boletim:"—",lat:-12.2440481,lng:-38.9796592},
+  {id:"OC-014",tipo:"Roubo de veículo",data:"10/03/2026",hora:"10:00",local:"Rua Araci",bairro:"Jardim Cruzeiro",viatura:"—",autor:"—",vitima:"160 Cinza – TML6C71",material:"—",apresentacao:"—",boletim:"—",lat:-12.24227,lng:-38.97745},
+  {id:"OC-015",tipo:"Recuperação de veículo",data:"10/03/2026",hora:"11:15",local:"Rua Araci",bairro:"Jardim Cruzeiro",viatura:"LOBO 08",autor:"—",vitima:"—",material:"160 Vermelha – JQK5845",apresentacao:"DRFR",boletim:"—",lat:-12.24247,lng:-38.97804},
+  {id:"OC-016",tipo:"Recuperação de veículo",data:"12/03/2026",hora:"22:20",local:"Rua Caminho das Índias",bairro:"Gabriela",viatura:"LOBO 06",autor:"—",vitima:"—",material:"Fan azul – SKN5C34",apresentacao:"—",boletim:"—",lat:-12.23325,lng:-38.9908333},
+  {id:"OC-017",tipo:"Tráfico de drogas",data:"13/03/2026",hora:"15:00",local:"Rua Politeama, 95",bairro:"35BI – Subaé",viatura:"PETO 65",autor:"Gabriel Santana Estrela",vitima:"—",material:"578 papelotes de cocaína",apresentacao:"DTE",boletim:"00199911/2026",lat:-12.2786973,lng:-38.9354416},
+  {id:"OC-018",tipo:"Tentativa de homicídio",data:"14/03/2026",hora:"05:15",local:"Rua Amor Perfeito, Conj. José Ronaldo",bairro:"Campo Limpo",viatura:"9.6505",autor:"Grimaldo Santos Junior",vitima:"Josenilton Reis Lopes",material:"—",apresentacao:"Não houve",boletim:"—",resumo:"Vítima socorrida para Policlínica do George Américo após ser esfaqueada pelo ex-cunhado Grimaldo ao tentar proteger a irmã. Posteriormente transferida via SAMU para o HGCA.",lat:-12.216117,lng:-38.979888},
+  {id:"OC-019",tipo:"Tentativa de homicídio",data:"14/03/2026",hora:"10:35",local:"Rua Decolagem – Policlínica George Américo",bairro:"George Américo",viatura:"VTR 4 rodas",autor:"Grimaldo dos Santos Lima",vitima:"Joana Reis Lopes / Josenilton Reis Lopes",material:"—",apresentacao:"DEAM",boletim:"—",resumo:"Autor invadiu residência na Rua Antônio Carlos Borges Jr, 304, agrediu a vítima Joana com socos, ameaças e faca. Irmão Josenilton foi golpeado no tórax ao intervir. Autor evadiu-se. Guarnição acompanhou vítima à DEAM.",lat:-12.218371,lng:-38.978256},
+  {id:"OC-020",tipo:"Tráfico de drogas",data:"15/03/2026",hora:"19:10",local:"Rua Lauro de Freitas, 730",bairro:"Novo Horizonte",viatura:"VTR 9.6503",autor:"Edvando Gomes Brito / Kauan Santos dos Santos",vitima:"—",material:"26 porções maconha / iPhone XR / iPhone 8+ / R$89,00 / cartão crédito",apresentacao:"Central de Flagrantes/FSA",boletim:"204051/2026",resumo:"Transeunte informou sobre tráfico na Rua Lauro de Freitas. No local, avistado motociclista recebendo entorpecente de dois jovens. Na busca pessoal foi encontrado o material ilícito. Indivíduos e material apresentados na Central de Flagrantes.",lat:-12.189696,lng:-38.971473},
+  {id:"OC-021",tipo:"Tentativa de homicídio",data:"15/03/2026",hora:"23:00",local:"Rua Decolagem – Policlínica George Américo",bairro:"George Américo",viatura:"VTR 4 rodas",autor:"Desconhecido",vitima:"Agnaldo da Silva Andrade",material:"—",apresentacao:"—",boletim:"—",resumo:"Vítima deu entrada na Policlínica socorrida por desconhecido. Atingida por disparo na perna direita após discussão na Rua Miragem. Transferida via SAMU (USA01-TGV9E77) para o HGCA.",lat:-12.218371,lng:-38.978256},
+  {id:"OC-022",tipo:"Tentativa de homicídio",data:"15/03/2026",hora:"22:45",local:"Povoado de Lagoa de Pedras",bairro:"Distrito de Maria Quitéria",viatura:"VTR 6510",autor:"Augusto Mascarenhas da Silva Ramos / Cleiton Luis Mascarenhas / Marcos Vinícios dos Santos Nunes",vitima:"—",material:"Espingarda cal.12 nº868119 / 2 munições cal.12 / Smartphone Motorola",apresentacao:"Central de Flagrantes – Sobradinho",boletim:"00204282/2026",resumo:"Três indivíduos localizados no Povoado alegando procurar moto roubada. Durante busca pessoal encontrada munição cal.12 com Augusto. Espingarda municiada localizada próxima a portão conforme indicado. Apresentados à Delegada Dra. Maria Clécia Vasconcelos.",lat:-12.088866,lng:-38.979941},
+  {id:"OC-023",tipo:"Recuperação de veículo",data:"16/03/2026",hora:"04:00",local:"Rua da Invasão",bairro:"George Américo",viatura:"VTR 4 rodas",autor:"Desconhecido",vitima:"Desconhecido",material:"Honda CG 160 Starter preta – RPE6H90",apresentacao:"DRFR",boletim:"204321/2026",resumo:"Veículo Honda CG 160 Starter preta placa RPE6H90 localizado abandonado na via. Apresentado na Delegacia de Repressão a Furtos e Roubos. IPC: Jailson de Araújo.",lat:-12.221665,lng:-38.980555},
+  {id:"OC-024",tipo:"Recuperação de veículo",data:"15/03/2026",hora:"10:50",local:"Povoado de Lagoa das Pedras",bairro:"Distrito de Maria Quitéria",viatura:"VTR 6510",autor:"Desconhecido",vitima:"—",material:"Honda CBX Twister 250 azul – JQH2G83",apresentacao:"1ª DT Jomafa",boletim:"204292/2026",resumo:"Motocicleta Honda CBX 250 Twister azul placa JQH2G83 encontrada abandonada durante atendimento de tentativa de homicídio no Povoado. Segundo informações estava sendo usada para crimes na região. Apresentada à 1ª DT Jomafa ao PC Jailson Araújo Soares.",lat:-12.088866,lng:-38.979941},
+];
+
+// ══════════════════════════════════════════════
+// SUSPEITOS
+// ══════════════════════════════════════════════
+const SUSPEITOS = [
+  {id:"SU-001",nome:"EXEMPLO DA SILVA",vulgo:"Exemplo",mae:"Maria da Silva",rg:"00.000.000-00",cpf:"000.000.000-00",endereco:"Rua Exemplo, nº 00",passagem:"Tráfico (2023)",faccao:"CV",obs:"Cadastro de exemplo — substitua pelos dados reais",lat:-12.218,lng:-38.983},
+];
+
+// ══════════════════════════════════════════════
+// ÁREAS FACCIONADAS
+// ══════════════════════════════════════════════
+const AREAS = [
+  {id:"AR-001",faccao:"CV",nome:"Campo Limpo",cor:"#ff2d55",obs:"Área de influência do CV",coords:[{lat:-12.2140,lng:-38.9870},{lat:-12.2140,lng:-38.9790},{lat:-12.2200,lng:-38.9790},{lat:-12.2200,lng:-38.9870}]},
+  {id:"AR-002",faccao:"PCC",nome:"Campo do Gado Novo",cor:"#30d158",obs:"Área de influência do PCC",coords:[{lat:-12.2210,lng:-39.0120},{lat:-12.2210,lng:-39.0030},{lat:-12.2280,lng:-39.0030},{lat:-12.2280,lng:-39.0120}]},
+];
+
+// ══════════════════════════════════════════════
+// CONFIG TIPOS
+// ══════════════════════════════════════════════
+const TC = {
+  "Homicídio":             {cor:"#8B0000", ic:"person"},
+  "Tentativa de homicídio":{cor:"#8B0000", ic:"person"},
+  "Tráfico de drogas":     {cor:"#6B3A2A", ic:"drug"},
+  "Disparo de arma":       {cor:"#E8650A", ic:"gun"},
+  "Auto de resistência":   {cor:"#E8650A", ic:"gun"},
+  "Apreensão de arma":     {cor:"#ffffff", ic:"gun"},
+  "Recuperação de veículo":{cor:"#7DC22A", ic:"car"},
+  "Roubo de veículo":      {cor:"#E84040", ic:"car"},
+  "Furto de veículo":      {cor:"#E84040", ic:"car"},
+  "Roubo a pedestre":      {cor:"#E84040", ic:"person"},
+};
+
+const SVGI = {
+  gun: `<text x="12" y="17" text-anchor="middle" font-size="16" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">🔫</text>`,
+  car:    `<path fill="white" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5zm-2-2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-10 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>`,
+  person: `<path fill="white" d="M12 2a2 2 0 110 4 2 2 0 010-4zm-1 18v-6H9l2-6h2l2 6h-2v6h-2z"/>`,
+  drug:   `<path fill="white" d="M2 16h14v3H2zm15 0h3v3h-3zm1-4c1.1 0 2-.9 2-2s-.9-2-2-2h-1c-.55 0-1-.45-1-1V5h-2v2c0 1.66 1.34 3 3 3h1c0 1.1.9 2 2 2v2z"/>`,
+  suspect:`<path fill="white" d="M12 2C9.24 2 7 4.24 7 7s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 10c-3.87 0-7 1.79-7 4v2h14v-2c0-2.21-3.13-4-7-4z"/>`,
+};
+
+function pinSvg(cor, ic){
+  const icone = cor==="#ffffff"
+    ? (SVGI[ic]||SVGI.person).replace(/fill="white"/g,'fill="black"')
+    : (SVGI[ic]||SVGI.person);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+    <ellipse cx="22" cy="41" rx="7" ry="2.5" fill="rgba(0,0,0,0.25)"/>
+    <circle cx="22" cy="20" r="19" fill="${cor}"/>
+    <svg x="11" y="9" width="22" height="22" viewBox="0 0 24 24">${icone}</svg>
+  </svg>`;
+}
+function mkIcon(cor, ic){
+  const blob=new Blob([pinSvg(cor,ic)],{type:'image/svg+xml'});
+  return {url:URL.createObjectURL(blob),scaledSize:new google.maps.Size(44,44),anchor:new google.maps.Point(22,40)};
+}
+
+// ══════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════
+const tipos=[...new Set(OCS.map(o=>o.tipo))];
+const filtros=new Set(tipos);
+let map,heatLayer,mRel={},mSusp={},polys=[];
+let relOn=true,suspOn=true,areaOn=true,heatOn=false;
+let camada='releases';
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function initMap(){
+  map=new google.maps.Map(document.getElementById('map'),{
+    center:{lat:-12.210,lng:-38.990},zoom:12,
+    mapTypeControl:false,streetViewControl:false,fullscreenControl:false,
+    styles:[
+      {elementType:"geometry",stylers:[{color:"#0a0c10"}]},
+      {elementType:"labels.text.stroke",stylers:[{color:"#0a0c10"}]},
+      {elementType:"labels.text.fill",stylers:[{color:"#636366"}]},
+      {featureType:"road",elementType:"geometry",stylers:[{color:"#1e2530"}]},
+      {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#0f1218"}]},
+      {featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#8e8e93"}]},
+      {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#2a3240"}]},
+      {featureType:"water",elementType:"geometry",stylers:[{color:"#050709"}]},
+      {featureType:"poi",stylers:[{visibility:"off"}]},
+      {featureType:"transit",stylers:[{visibility:"off"}]},
+      {featureType:"landscape",elementType:"geometry",stylers:[{color:"#0d1017"}]},
+      {featureType:"administrative",elementType:"geometry.stroke",stylers:[{color:"#1e2530"}]},
+      {featureType:"administrative.locality",elementType:"labels.text.fill",stylers:[{color:"#8e8e93"}]}
+    ]
+  });
+
+  // Releases
+  OCS.forEach(oc=>{
+    const cfg=TC[oc.tipo]||{cor:"#8e8e93", ic:"person"};
+    oc.cor=cfg.cor; oc.ic=cfg.ic;
+    const m=new google.maps.Marker({position:{lat:oc.lat,lng:oc.lng},map,title:oc.tipo,icon:mkIcon(cfg.cor,cfg.ic)});
+    const iw=new google.maps.InfoWindow({content:iwRelease(oc),maxWidth:310});
+    m.addListener('click',()=>{closeAllIW();iw.open(map,m);});
+    mRel[oc.id]={m,iw,oc};
+  });
+
+  // Suspeitos
+  SUSPEITOS.forEach(s=>{
+    const m=new google.maps.Marker({position:{lat:s.lat,lng:s.lng},map,title:s.vulgo||s.nome,icon:mkIcon("#ff9f0a","suspect")});
+    const iw=new google.maps.InfoWindow({content:iwSusp(s),maxWidth:310});
+    m.addListener('click',()=>{closeAllIW();iw.open(map,m);});
+    mSusp[s.id]={m,iw,s};
+  });
+
+  // Áreas
+  AREAS.forEach(area=>{
+    const poly=new google.maps.Polygon({paths:area.coords,map,strokeColor:area.cor,strokeOpacity:.9,strokeWeight:2,fillColor:area.cor,fillOpacity:.18});
+    const iw=new google.maps.InfoWindow({content:iwArea(area)});
+    poly.addListener('click',e=>{closeAllIW();iw.setPosition(e.latLng);iw.open(map);});
+    polys.push({poly,iw,area});
+  });
+
+  // Heatmap
+  heatLayer=new google.maps.visualization.HeatmapLayer({
+    data:OCS.map(o=>new google.maps.LatLng(o.lat,o.lng)),
+    map:null,radius:60,opacity:.7,
+    gradient:['rgba(0,0,0,0)','rgba(255,159,10,0.4)','rgba(255,107,53,0.7)','rgba(255,45,85,1)']
+  });
+
+  buildUI();
+}
+
+function closeAllIW(){
+  Object.values(mRel).forEach(x=>x.iw.close());
+  Object.values(mSusp).forEach(x=>x.iw.close());
+  polys.forEach(x=>x.iw.close());
+}
+
+// ══════════════════════════════════════════════
+// INFO WINDOWS
+// ══════════════════════════════════════════════
+function row(lbl,val){return val&&val!=='—'&&val!=='Nenhum valor'&&val!=='XX'&&val!=='xx'?`<div class="iw-row"><div class="iw-lbl">${lbl}</div><div class="iw-val">${val}</div></div>`:'';}
+
+function iwRelease(oc){
+  return `<div class="iw">
+    <div class="iw-head">
+      <div class="iw-icon" style="background:${oc.cor}22">
+        <svg width="18" height="18" viewBox="0 0 24 24">${SVGI[oc.ic]||SVGI.person}</svg>
+      </div>
+      <div><div class="iw-tipo" style="color:${oc.cor}">${oc.tipo.toUpperCase()}</div>
+      <div class="iw-id">${oc.id} · CPR-LESTE · 65ª CIPM</div></div>
+    </div>
+    <div class="iw-body">
+      ${row('Data/Hora',oc.data+' às '+oc.hora)}
+      ${row('Local',oc.local)}
+      ${row('Bairro',oc.bairro)}
+      ${row('Viatura',oc.viatura)}
+      ${row('Vítima',oc.vitima)}
+      ${row('Autor',oc.autor)}
+      ${row('Material',oc.material)}
+      ${row('Apresentação',oc.apresentacao)}
+      ${row('Boletim',oc.boletim)}
+      ${oc.resumo?`<div class="iw-sec-title">Resumo</div><div class="iw-resumo">${oc.resumo}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function iwSusp(s){
+  const fc=s.faccao==='CV'?'#ff2d55':s.faccao==='PCC'?'#30d158':s.faccao==='BDM'?'#0a84ff':'#8e8e93';
+  return `<div class="iw">
+    <div class="iw-head">
+      <div class="iw-icon" style="background:#ff9f0a22">
+        <svg width="18" height="18" viewBox="0 0 24 24">${SVGI.suspect}</svg>
+      </div>
+      <div><div class="iw-tipo" style="color:#ff9f0a">SUSPEITO</div>
+      <div class="iw-id">${s.id} · PETO 65ª CIPM</div></div>
+    </div>
+    <div class="iw-body">
+      ${row('Nome',s.nome)}${row('Vulgo',s.vulgo)}${row('Mãe',s.mae)}
+      ${row('RG',s.rg)}${row('CPF',s.cpf)}${row('Endereço',s.endereco)}
+      ${row('Passagem',s.passagem)}
+      <div class="iw-row"><div class="iw-lbl">Facção</div><div class="iw-val" style="color:${fc};font-weight:700">${s.faccao||'—'}</div></div>
+      ${s.obs?`<div class="iw-sec-title">Observações</div><div class="iw-resumo">${s.obs}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function iwArea(area){
+  return `<div class="iw">
+    <div class="iw-head">
+      <div class="iw-icon" style="background:${area.cor}22;color:${area.cor};font-size:13px;font-weight:800">${area.faccao}</div>
+      <div><div class="iw-tipo" style="color:${area.cor}">${area.faccao} — ÁREA FACCIONADA</div>
+      <div class="iw-id">${area.id} · 65ª CIPM</div></div>
+    </div>
+    <div class="iw-body">
+      ${row('Região',area.nome)}
+      ${area.obs?`<div class="iw-sec-title">Observações</div><div class="iw-resumo">${area.obs}</div>`:''}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════
+function buildUI(){
+  document.getElementById('tot').textContent=OCS.length;
+  document.getElementById('cnt-hom').textContent=OCS.filter(o=>o.tipo==='Homicídio').length;
+  document.getElementById('cnt-vtr').textContent=OCS.filter(o=>o.tipo==='Recuperação de veículo').length;
+  document.getElementById('cnt-traf').textContent=OCS.filter(o=>o.tipo==='Tráfico de drogas').length;
+  document.getElementById('tot-susp').textContent=SUSPEITOS.length;
+  document.getElementById('tot-susp-fac').textContent=SUSPEITOS.filter(s=>s.faccao).length;
+  buildFilters('filters');
+  renderRel('occ-list');
+  renderSusp('susp-list');
+  renderAreas('area-list');
+}
+
+function switchCamada(c,btn){
+  camada=c;
+  document.querySelectorAll('.cam-tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('panel-releases').style.display=c==='releases'?'flex':'none';
+  document.getElementById('panel-suspeitos').style.display=c==='suspeitos'?'flex':'none';
+  document.getElementById('panel-areas').style.display=c==='areas'?'flex':'none';
+  ['panel-releases','panel-suspeitos','panel-areas'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.style.display==='flex') el.style.flexDirection='column';
+  });
+}
+
+function buildFilters(id){
+  const el=document.getElementById(id); el.innerHTML='';
+  tipos.forEach(tipo=>{
+    const cfg=TC[tipo]||{cor:'#8e8e93'};
+    const count=OCS.filter(o=>o.tipo===tipo).length;
+    const div=document.createElement('div');
+    div.className='f-item'+(filtros.has(tipo)?' on':'');
+    div.dataset.tipo=tipo;
+    div.innerHTML=`<div class="f-dot" style="background:${cfg.cor}"></div><span>${tipo}</span><span class="f-count">${count}</span>`;
+    div.addEventListener('click',()=>{
+      filtros.has(tipo)?filtros.delete(tipo):filtros.add(tipo);
+      document.querySelectorAll(`[data-tipo="${tipo}"]`).forEach(e=>e.classList.toggle('on',filtros.has(tipo)));
+      atualizaRel();
+    });
+    el.appendChild(div);
+  });
+}
+
+function renderRel(id){
+  const el=document.getElementById(id); el.innerHTML='';
+  OCS.filter(o=>filtros.has(o.tipo)).forEach(oc=>{
+    const cfg=TC[oc.tipo]||{cor:'#8e8e93'};
+    const div=document.createElement('div');
+    div.className='occ-card'; div.style.borderLeftColor=cfg.cor;
+    div.innerHTML=`<div class="occ-top"><span class="occ-badge" style="background:${cfg.cor}22;color:${cfg.cor}">${oc.tipo}</span><span class="occ-time">${oc.hora}</span></div><div class="occ-bairro">${oc.bairro}</div><div class="occ-local">${oc.local} · ${oc.data}</div>`;
+    div.addEventListener('click',()=>{map.panTo({lat:oc.lat,lng:oc.lng});map.setZoom(16);closeAllIW();mRel[oc.id].iw.open(map,mRel[oc.id].m);closeDrawer();});
+    el.appendChild(div);
+  });
+}
+
+function renderSusp(id){
+  const el=document.getElementById(id); el.innerHTML='';
+  SUSPEITOS.forEach(s=>{
+    const fc=s.faccao==='CV'?'#ff2d55':s.faccao==='PCC'?'#30d158':s.faccao==='BDM'?'#0a84ff':'#8e8e93';
+    const div=document.createElement('div');
+    div.className='occ-card'; div.style.borderLeftColor='#ff9f0a';
+    div.innerHTML=`<div class="occ-top"><span class="occ-badge" style="background:${fc}22;color:${fc}">${s.faccao||'S/F'}</span><span class="occ-time">${s.id}</span></div><div class="occ-bairro">${s.vulgo?'"'+s.vulgo+'"':s.nome}</div><div class="occ-local">${s.passagem||'Sem passagem'}</div>`;
+    div.addEventListener('click',()=>{map.panTo({lat:s.lat,lng:s.lng});map.setZoom(16);closeAllIW();mSusp[s.id].iw.open(map,mSusp[s.id].m);closeDrawer();});
+    el.appendChild(div);
+  });
+}
+
+function renderAreas(id){
+  const el=document.getElementById(id); el.innerHTML='';
+  AREAS.forEach(area=>{
+    const div=document.createElement('div');
+    div.className='occ-card'; div.style.borderLeftColor=area.cor;
+    div.innerHTML=`<div class="occ-top"><span class="occ-badge" style="background:${area.cor}22;color:${area.cor}">${area.faccao}</span><span class="occ-time">${area.id}</span></div><div class="occ-bairro">${area.nome}</div><div class="occ-local">${area.obs}</div>`;
+    div.addEventListener('click',()=>{map.panTo(area.coords[0]);map.setZoom(15);closeDrawer();});
+    el.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════
+// TOGGLES
+// ══════════════════════════════════════════════
+function atualizaRel(){Object.values(mRel).forEach(({m,oc})=>m.setVisible(relOn&&filtros.has(oc.tipo)));renderRel('occ-list');}
+function toggleReleases(){relOn=!relOn;document.querySelectorAll('#tog-rel').forEach(t=>t.classList.toggle('on',relOn));Object.values(mRel).forEach(({m,oc})=>m.setVisible(relOn&&filtros.has(oc.tipo)));}
+function toggleSuspeitos(){suspOn=!suspOn;document.querySelectorAll('#tog-susp').forEach(t=>t.classList.toggle('on',suspOn));Object.values(mSusp).forEach(({m})=>m.setVisible(suspOn));}
+function toggleAreas(){areaOn=!areaOn;document.querySelectorAll('#tog-area').forEach(t=>t.classList.toggle('on',areaOn));polys.forEach(({poly})=>poly.setVisible(areaOn));}
+function toggleHeat(){heatOn=!heatOn;document.querySelectorAll('#tog-heat').forEach(t=>t.classList.toggle('on',heatOn));heatLayer.setMap(heatOn?map:null);}
+
+// ══════════════════════════════════════════════
+// DRAWER MOBILE
+// ══════════════════════════════════════════════
+function openDrawer(tipo,btn){
+  document.querySelectorAll('.bb-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  const c=document.getElementById('drawer-content');
+  if(tipo==='camadas'){
+    c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">CAMADAS</div>
+      <div class="cam-tabs" style="margin-bottom:12px">
+        <button class="cam-tab ${camada==='releases'?'on':''}" onclick="switchCamada('releases',this)">Releases</button>
+        <button class="cam-tab ${camada==='suspeitos'?'on':''}" onclick="switchCamada('suspeitos',this)">Suspeitos</button>
+        <button class="cam-tab ${camada==='areas'?'on':''}" onclick="switchCamada('areas',this)">Áreas</button>
+      </div>
+      <div class="layer-row" onclick="toggleReleases()"><span>Ocorrências</span><div class="tog ${relOn?'on':''}"></div></div>
+      <div class="layer-row" onclick="toggleSuspeitos()"><span>Suspeitos</span><div class="tog ${suspOn?'on':''}"></div></div>
+      <div class="layer-row" onclick="toggleAreas()"><span>Áreas faccionadas</span><div class="tog ${areaOn?'on':''}"></div></div>
+      <div class="layer-row" onclick="toggleHeat()"><span>Mapa de calor</span><div class="tog ${heatOn?'on':''}"></div></div>`;
+  } else if(tipo==='filtros'){
+    c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">FILTRAR POR TIPO</div><div class="filters" id="m-filters"></div>`;
+    buildFilters('m-filters');
+  } else if(tipo==='lista'){
+    if(camada==='releases'){c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">OCORRÊNCIAS (${OCS.length})</div><div id="m-list" class="occ-list" style="max-height:55dvh;overflow-y:auto"></div>`;renderRel('m-list');}
+    else if(camada==='suspeitos'){c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">SUSPEITOS</div><div id="m-list" class="occ-list" style="max-height:55dvh;overflow-y:auto"></div>`;renderSusp('m-list');}
+    else{c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">ÁREAS</div><div id="m-list" class="occ-list" style="max-height:55dvh;overflow-y:auto"></div>`;renderAreas('m-list');}
+  } else if(tipo==='legenda'){
+    c.innerHTML=`<div class="sb-title" style="margin-bottom:10px">LEGENDA</div>
+      <div class="area-legend">
+        <div class="area-item"><div class="area-swatch" style="background:#8B0000"></div><span>Homicídio / Tent. Homicídio</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#E8650A"></div><span>Disparo / Auto de resistência</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#4B7A1F"></div><span>Apreensão de arma</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#7DC22A"></div><span>Recuperação de veículo</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#E84040"></div><span>Roubo / Furto de veículo</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#6B3A2A"></div><span>Tráfico de drogas</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#ff9f0a"></div><span>Suspeitos</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#30d158;opacity:.5"></div><span>Área PCC</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#ff2d55;opacity:.5"></div><span>Área CV</span></div>
+        <div class="area-item"><div class="area-swatch" style="background:#0a84ff;opacity:.5"></div><span>Área BDM</span></div>
+      </div>`;
+  }
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCabMsGVc7ucVZNbAFGPTrCsveQbJlCOGU&libraries=visualization&callback=initMap"></script>
+</body>
+</html>
