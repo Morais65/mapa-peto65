@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico Firebase</title>
+<style>
+  body{background:#0a0c10;color:#e5e5ea;font-family:monospace;padding:20px;}
+  h2{color:#00e5ff;margin-bottom:16px;}
+  input{display:block;width:100%;max-width:360px;background:#0f1218;border:1px solid #1e2530;border-radius:6px;padding:10px;color:#e5e5ea;font-size:14px;margin-bottom:10px;outline:none;}
+  button{padding:12px 24px;background:#ff2d55;border:none;border-radius:6px;color:#fff;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:16px;}
+  #log{background:#0f1218;border:1px solid #1e2530;border-radius:8px;padding:14px;max-height:400px;overflow-y:auto;font-size:12px;line-height:1.9;}
+  .ok{color:#30d158;} .err{color:#ff2d55;} .info{color:#00e5ff;} .warn{color:#ff9f0a;}
+</style>
+</head>
+<body>
+<h2>🔬 Diagnóstico Firebase · PETO 65ª CIPM</h2>
+<input type="email" id="email" placeholder="E-mail">
+<input type="password" id="senha" placeholder="Senha">
+<button id="btn">Testar Login</button>
+<div id="log"><span class="info">Aguardando...</span></div>
+
+<script type="module">
+const log = (msg, tipo='info') => {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${tipo}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+};
+
+log('Carregando Firebase SDK...','info');
+
+try {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js");
+  log('✅ firebase-app carregado','ok');
+
+  const { getAuth, signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js");
+  log('✅ firebase-auth carregado','ok');
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDwe8m5mDU3aAb4e6DW5EOlh_bX1SLXPHM",
+    authDomain: "peto-65cipm.firebaseapp.com",
+    projectId: "peto-65cipm",
+    storageBucket: "peto-65cipm.firebasestorage.app",
+    messagingSenderId: "126503877019",
+    appId: "1:126503877019:web:f02c8b4aaaf5a0b912c93e"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  log('✅ Firebase inicializado — projeto: peto-65cipm','ok');
+  log('✅ Domínio atual: '+window.location.hostname,'info');
+
+  document.getElementById('btn').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    if(!email||!senha){ log('⚠️ Preencha e-mail e senha','warn'); return; }
+
+    log('🔐 Tentando autenticar: '+email,'info');
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, senha);
+      log('✅ LOGIN OK! UID: '+cred.user.uid,'ok');
+      log('✅ E-mail verificado: '+cred.user.emailVerified,'ok');
+      log('🎯 Firebase está funcionando corretamente!','ok');
+    } catch(e) {
+      log('❌ Erro de login: '+e.code,'err');
+      log('❌ Mensagem: '+e.message,'err');
+      if(e.code==='auth/invalid-credential') log('→ E-mail ou senha incorretos','warn');
+      if(e.code==='auth/network-request-failed') log('→ Problema de rede/conexão','warn');
+      if(e.code==='auth/unauthorized-domain') log('→ Domínio não autorizado no Firebase Console','warn');
+    }
+  });
+
+} catch(e) {
+  log('❌ Erro ao carregar SDK: '+e.message,'err');
+}
+</script>
+</body>
+</html>
