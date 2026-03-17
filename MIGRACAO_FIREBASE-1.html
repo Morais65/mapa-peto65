@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIGRAÇÃO · PETO 65ª CIPM</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0a0c10;color:#e5e5ea;font-family:'Courier New',monospace;padding:20px;min-height:100vh;}
+  h1{font-size:16px;letter-spacing:3px;color:#00e5ff;margin-bottom:4px;}
+  p{font-size:11px;color:#8e8e93;margin-bottom:20px;letter-spacing:1px;}
+  #log{background:#0f1218;border:1px solid #1e2530;border-radius:8px;padding:16px;height:60vh;overflow-y:auto;font-size:12px;line-height:1.8;}
+  .ok{color:#30d158;} .err{color:#ff2d55;} .info{color:#00e5ff;} .warn{color:#ff9f0a;}
+  #btn{margin-top:16px;width:100%;padding:14px;background:#00e5ff;border:none;border-radius:8px;color:#000;font-family:'Courier New',monospace;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;}
+  #btn:disabled{opacity:.4;cursor:not-allowed;}
+</style>
+</head>
+<body>
+<h1>MIGRAÇÃO DE DADOS · PETO 65ª CIPM</h1>
+<p>ABRE UMA VEZ · INSERE TUDO NO FIREBASE · PODE FECHAR DEPOIS</p>
+<div id="log"><span class="info">Aguardando início da migração...</span></div>
+<button id="btn" onclick="iniciarMigracao()">▶ INICIAR MIGRAÇÃO</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDwe8m5mDU3aAb4e6DW5EOlh_bX1SLXPHM",
+  authDomain: "peto-65cipm.firebaseapp.com",
+  projectId: "peto-65cipm",
+  storageBucket: "peto-65cipm.firebasestorage.app",
+  messagingSenderId: "126503877019",
+  appId: "1:126503877019:web:f02c8b4aaaf5a0b912c93e"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── DADOS ────────────────────────────────────
+const RELEASES = [
+  {tipo:"Recuperação de veículo",data:"2026-03-12",hora:"11:10",local:"Rua 31, Qd 22, Cond. Campo Belo",bairro:"Campo do Gado Novo",lat:-12.224069,lng:-39.008142,viatura:"LOBO 06",vitima:"Não identificado",autor:"Não identificado",material:"Gol preto – JSQ5761",apresentacao:"DRFR",boletim:"00196054/2026",resumo:"Veículo localizado abandonado. Consulta revelou restrição de roubo. Apresentado na DRFR."},
+  {tipo:"Recuperação de veículo",data:"2026-03-10",hora:"21:30",local:"Rua da Paz",bairro:"Campo do Gado Novo",lat:-12.21994,lng:-39.00095,viatura:"PETO 65",vitima:"—",autor:"—",material:"Ônix branco – RFZ7I90",apresentacao:"—",boletim:"—",resumo:"Veículo localizado na Rua da Paz. Verificada restrição de roubo."},
+  {tipo:"Homicídio",data:"2026-03-11",hora:"20:15",local:"Fundo do Condomínio Caraíbas",bairro:"Campo do Gado Novo",lat:-12.2227,lng:-38.99809,viatura:"LOBO 07",vitima:"Victor Antônio de Brito Tagnin",autor:"Não identificado",material:"—",apresentacao:"DPT",boletim:"—",resumo:"Vítima localizada sem vida no fundo do Condomínio Caraíbas. Equipe do DPT acionada para levantamento cadavérico."},
+  {tipo:"Recuperação de veículo",data:"2026-03-11",hora:"08:40",local:"Rua Ricardo Oliveira",bairro:"Gabriela",lat:-12.22681,lng:-38.99157,viatura:"PETO 65",vitima:"—",autor:"—",material:"PFC2400 / QTY1D01 / TML6C71",apresentacao:"DRFR",boletim:"—",resumo:"Três veículos localizados na Rua Ricardo Oliveira com restrição de roubo. Apresentados na DRFR."},
+  {tipo:"Disparo de arma",data:"2026-03-12",hora:"22:20",local:"Rua Caminho das Índias",bairro:"Gabriela",lat:-12.2334032,lng:-38.9907767,viatura:"LOBO 06",vitima:"—",autor:"—",material:"—",apresentacao:"—",boletim:"—",resumo:"Guarnição acionada via CICOM para verificar disparos de arma de fogo na Rua Caminho das Índias."},
+  {tipo:"Tráfico de drogas",data:"2026-03-12",hora:"19:40",local:"Rua Rio de Janeiro, 90",bairro:"Maria Quitéria",lat:-12.1470271,lng:-38.9916795,viatura:"Motopatrulhamento",vitima:"—",autor:"Taylane Cerqueira Lima / Marineide de Jesus Noel",material:"—",apresentacao:"—",boletim:"—",resumo:"Dois indivíduos flagrados no tráfico de drogas na Rua Rio de Janeiro. Apresentados à Central de Flagrantes."},
+  {tipo:"Homicídio",data:"2026-03-02",hora:"07:50",local:"Estrada da Cavalaria",bairro:"Maria Quitéria",lat:-12.16321,lng:-38.98548,viatura:"PETO 65",vitima:"Eliane Matos Santana",autor:"Renato Souza do Carmo",material:"—",apresentacao:"DPT",boletim:"—",resumo:"Vítima Eliane Matos Santana encontrada sem vida na Estrada da Cavalaria. Autor Renato Souza do Carmo identificado. DPT acionado."},
+  {tipo:"Homicídio",data:"2026-03-06",hora:"19:46",local:"Rua Joana Pereira da Silva, 128",bairro:"Pampalona",lat:-12.2161023,lng:-38.987699,viatura:"LOBO 06",vitima:"Edmilson Pedro da Silva",autor:"Não identificado",material:"—",apresentacao:"DPT",boletim:"—",resumo:"Vítima Edmilson Pedro da Silva encontrada sem vida. DPT acionado para levantamento cadavérico."},
+  {tipo:"Homicídio",data:"2026-03-12",hora:"02:40",local:"Rua Jazidas, 20",bairro:"Campo Limpo",lat:-12.2161937,lng:-38.9832424,viatura:"LOBO 07",vitima:"Jadson da Silva Santos",autor:"Não identificado",material:"—",apresentacao:"DPT",boletim:"—",resumo:"Por volta das 02h40, guarnição acionada pelo CICOM para verificar disparos de arma de fogo. Solicitante Claudiane Menezes Bastos, 29 anos, informou que 03 indivíduos invadiram a residência e atiraram no namorado Jadson da Silva Santos, 29 anos, que veio a óbito no local. DPT: Del. Fabrício | Esc. Dayse | Inv. Ozair e Clodoaldo | Per. Téc. Antonio Nilton | Per. Crim. Josemar."},
+  {tipo:"Tentativa de homicídio",data:"2026-03-08",hora:"20:15",local:"Rua Ipiúna",bairro:"Campo Limpo",lat:-12.2158293,lng:-38.9783064,viatura:"LOBO 05",vitima:"Robson de Jesus Oliveira",autor:"XX",material:"—",apresentacao:"—",boletim:"—",resumo:"Vítima Robson de Jesus Oliveira socorrida após tentativa de homicídio na Rua Ipiúna. Guarnição acionada via CICOM."},
+  {tipo:"Recuperação de veículo",data:"2026-03-07",hora:"20:30",local:"Rua Satélite",bairro:"George Américo",lat:-12.2221012,lng:-38.9756526,viatura:"PETO 65",vitima:"—",autor:"—",material:"CB Twister",apresentacao:"—",boletim:"182038/2026",resumo:"Motocicleta CB Twister localizada na Rua Satélite com restrição de roubo."},
+  {tipo:"Homicídio",data:"2026-03-07",hora:"19:15",local:"Rua Jaguará, 12",bairro:"Campo Limpo",lat:-12.2100454,lng:-38.9696743,viatura:"LOBO 07",vitima:"Félix Sena Lima",autor:"Não identificado",material:"—",apresentacao:"—",boletim:"—",resumo:"Vítima Félix Sena Lima encontrada sem vida na Rua Jaguará."},
+  {tipo:"Apreensão de arma",data:"2026-03-08",hora:"00:45",local:"Rua Brumado",bairro:"Jardim Cruzeiro",lat:-12.2440481,lng:-38.9796592,viatura:"LOBO 08",vitima:"—",autor:"—",material:"Pop100 / PT92 / Maconha",apresentacao:"CENFLAG",boletim:"—",resumo:"Apreensão de armas e entorpecentes na Rua Brumado. Material apresentado ao CENFLAG."},
+  {tipo:"Roubo de veículo",data:"2026-03-10",hora:"10:00",local:"Rua Araci",bairro:"Jardim Cruzeiro",lat:-12.24227,lng:-38.97745,viatura:"—",vitima:"160 Cinza – TML6C71",autor:"—",material:"—",apresentacao:"—",boletim:"—",resumo:"Roubo de motocicleta 160 Cinza placa TML6C71 na Rua Araci."},
+  {tipo:"Recuperação de veículo",data:"2026-03-10",hora:"11:15",local:"Rua Araci",bairro:"Jardim Cruzeiro",lat:-12.24247,lng:-38.97804,viatura:"LOBO 08",vitima:"—",autor:"—",material:"160 Vermelha – JQK5845",apresentacao:"DRFR",boletim:"—",resumo:"Motocicleta 160 Vermelha placa JQK5845 localizada na Rua Araci com restrição de roubo. Apresentada na DRFR."},
+  {tipo:"Recuperação de veículo",data:"2026-03-12",hora:"22:20",local:"Rua Caminho das Índias",bairro:"Gabriela",lat:-12.23325,lng:-38.9908333,viatura:"LOBO 06",vitima:"—",autor:"—",material:"Fan azul – SKN5C34",apresentacao:"—",boletim:"—",resumo:"Motocicleta Fan azul placa SKN5C34 localizada na Rua Caminho das Índias com restrição de roubo."},
+  {tipo:"Tráfico de drogas",data:"2026-03-13",hora:"15:00",local:"Rua Politeama, 95",bairro:"35BI – Subaé",lat:-12.2786973,lng:-38.9354416,viatura:"PETO 65",vitima:"—",autor:"Gabriel Santana Estrela",material:"578 papelotes de cocaína",apresentacao:"DTE",boletim:"00199911/2026",resumo:"Gabriel Santana Estrela flagrado com 578 papelotes de cocaína na Rua Politeama. Apresentado ao DTE."},
+  {tipo:"Tentativa de homicídio",data:"2026-03-14",hora:"05:15",local:"Rua Amor Perfeito, Conj. José Ronaldo",bairro:"Campo Limpo",lat:-12.216117,lng:-38.979888,viatura:"9.6505",vitima:"Josenilton Reis Lopes",autor:"Grimaldo Santos Junior",material:"—",apresentacao:"Não houve",boletim:"—",resumo:"Vítima socorrida para Policlínica do George Américo após ser esfaqueada pelo ex-cunhado Grimaldo ao tentar proteger a irmã. Posteriormente transferida via SAMU para o HGCA."},
+  {tipo:"Tentativa de homicídio",data:"2026-03-14",hora:"10:35",local:"Rua Decolagem – Policlínica George Américo",bairro:"George Américo",lat:-12.218371,lng:-38.978256,viatura:"VTR 4 rodas",vitima:"Joana Reis Lopes / Josenilton Reis Lopes",autor:"Grimaldo dos Santos Lima",material:"—",apresentacao:"DEAM",boletim:"—",resumo:"Autor invadiu residência na Rua Antônio Carlos Borges Jr, 304, agrediu a vítima Joana com socos, ameaças e faca. Irmão Josenilton foi golpeado no tórax ao intervir. Autor evadiu-se. Guarnição acompanhou vítima à DEAM."},
+  {tipo:"Tráfico de drogas",data:"2026-03-15",hora:"19:10",local:"Rua Lauro de Freitas, 730",bairro:"Novo Horizonte",lat:-12.189696,lng:-38.971473,viatura:"VTR 9.6503",vitima:"—",autor:"Edvando Gomes Brito / Kauan Santos dos Santos",material:"26 porções maconha / iPhone XR / iPhone 8+ / R$89,00 / cartão crédito",apresentacao:"Central de Flagrantes/FSA",boletim:"204051/2026",resumo:"Transeunte informou sobre tráfico na Rua Lauro de Freitas. No local avistado motociclista recebendo entorpecente de dois jovens. Na busca pessoal foi encontrado o material ilícito. Indivíduos e material apresentados na Central de Flagrantes."},
+  {tipo:"Tentativa de homicídio",data:"2026-03-15",hora:"23:00",local:"Rua Decolagem – Policlínica George Américo",bairro:"George Américo",lat:-12.218371,lng:-38.978256,viatura:"VTR 4 rodas",vitima:"Agnaldo da Silva Andrade",autor:"Desconhecido",material:"—",apresentacao:"—",boletim:"—",resumo:"Vítima deu entrada na Policlínica socorrida por desconhecido. Atingida por disparo na perna direita após discussão na Rua Miragem. Transferida via SAMU para o HGCA."},
+  {tipo:"Tentativa de homicídio",data:"2026-03-15",hora:"22:45",local:"Povoado de Lagoa de Pedras",bairro:"Distrito de Maria Quitéria",lat:-12.088866,lng:-38.979941,viatura:"VTR 6510",vitima:"—",autor:"Augusto Mascarenhas da Silva Ramos / Cleiton Luis Mascarenhas / Marcos Vinícios dos Santos Nunes",material:"Espingarda cal.12 nº868119 / 2 munições cal.12 / Smartphone Motorola",apresentacao:"Central de Flagrantes – Sobradinho",boletim:"00204282/2026",resumo:"Três indivíduos localizados no Povoado alegando procurar moto roubada. Durante busca pessoal encontrada munição cal.12. Espingarda municiada localizada próxima a portão. Apresentados à Delegada Dra. Maria Clécia Vasconcelos."},
+  {tipo:"Recuperação de veículo",data:"2026-03-16",hora:"04:00",local:"Rua da Invasão",bairro:"George Américo",lat:-12.221665,lng:-38.980555,viatura:"VTR 4 rodas",vitima:"Desconhecido",autor:"Desconhecido",material:"Honda CG 160 Starter preta – RPE6H90",apresentacao:"DRFR",boletim:"204321/2026",resumo:"Veículo Honda CG 160 Starter preta placa RPE6H90 localizado abandonado na via. Apresentado na DRFR. IPC: Jailson de Araújo."},
+  {tipo:"Recuperação de veículo",data:"2026-03-15",hora:"10:50",local:"Povoado de Lagoa das Pedras",bairro:"Distrito de Maria Quitéria",lat:-12.088866,lng:-38.979941,viatura:"VTR 6510",vitima:"—",autor:"Desconhecido",material:"Honda CBX Twister 250 azul – JQH2G83",apresentacao:"1ª DT Jomafa",boletim:"204292/2026",resumo:"Motocicleta Honda CBX 250 Twister azul placa JQH2G83 encontrada abandonada durante atendimento de tentativa de homicídio. Apresentada à 1ª DT Jomafa ao PC Jailson Araújo Soares."},
+];
+
+const SUSPEITOS = [
+  {nome:"ISLAN SANTOS CONCEIÇÃO",vulgo:"—",mae:"Lenilda de Jesus Santos",rg:"15.099.607-16",cpf:"077.916.875-50",endereco:"Condomínio Asa Branca, Bloco 20, Ap. 06",passagem:"—",faccao:"—",obs:"Tatuagens no peito e braço direito — figuras religiosas (Nossa Senhora, Cristo). Tatuagem no braço esquerdo.",lat:-12.1981447,lng:-38.9967861},
+];
+
+const AREAS = [
+  {faccao:"CV",nome:"Campo Limpo",obs:"Área de influência do CV — concentração no entorno da Rua Jazidas",coords:[{lat:-12.2140,lng:-38.9870},{lat:-12.2140,lng:-38.9790},{lat:-12.2200,lng:-38.9790},{lat:-12.2200,lng:-38.9870}]},
+  {faccao:"PCC",nome:"Campo do Gado Novo",obs:"Área de influência do PCC — Condomínios Campo Belo e adjacências",coords:[{lat:-12.2210,lng:-39.0120},{lat:-12.2210,lng:-39.0030},{lat:-12.2280,lng:-39.0030},{lat:-12.2280,lng:-39.0120}]},
+];
+
+// ── LOG ───────────────────────────────────────
+function log(msg, tipo='info'){
+  const el=document.getElementById('log');
+  el.innerHTML+=`<div class="${tipo}">${msg}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── MIGRAÇÃO ──────────────────────────────────
+window.iniciarMigracao = async function(){
+  const btn=document.getElementById('btn');
+  btn.disabled=true; btn.textContent='⏳ MIGRANDO...';
+
+  // Pede login
+  const email=prompt('Digite seu e-mail do Firebase:');
+  const senha=prompt('Digite sua senha:');
+  if(!email||!senha){log('Migração cancelada.','warn');btn.disabled=false;btn.textContent='▶ INICIAR MIGRAÇÃO';return;}
+
+  log('🔐 Autenticando...','info');
+  try {
+    await signInWithEmailAndPassword(auth,email,senha);
+    log('✅ Autenticado com sucesso!','ok');
+  } catch(e) {
+    log('❌ Erro de autenticação: '+e.message,'err');
+    btn.disabled=false; btn.textContent='▶ INICIAR MIGRAÇÃO';
+    return;
+  }
+
+  // Limpa coleções existentes
+  log('🧹 Verificando dados existentes...','info');
+  for(const col of ['releases','suspeitos','areas']){
+    const snap=await getDocs(collection(db,col));
+    if(snap.size>0){
+      log(`⚠️ Encontrados ${snap.size} registros em "${col}" — limpando...`,'warn');
+      for(const d of snap.docs) await deleteDoc(doc(db,col,d.id));
+      log(`✅ "${col}" limpo.`,'ok');
+    }
+  }
+
+  // Insere releases
+  log(`\n📋 Inserindo ${RELEASES.length} ocorrências...`,'info');
+  let ok=0, err=0;
+  for(const r of RELEASES){
+    try {
+      await addDoc(collection(db,'releases'),{...r,criadoEm:serverTimestamp()});
+      log(`  ✅ ${r.tipo} — ${r.bairro} (${r.data})`,'ok');
+      ok++;
+    } catch(e){
+      log(`  ❌ Erro: ${e.message}`,'err');
+      err++;
+    }
+  }
+  log(`📋 Releases: ${ok} inseridos, ${err} erros.`,'info');
+
+  // Insere suspeitos
+  log(`\n👤 Inserindo ${SUSPEITOS.length} suspeito(s)...`,'info');
+  for(const s of SUSPEITOS){
+    try {
+      await addDoc(collection(db,'suspeitos'),{...s,criadoEm:serverTimestamp()});
+      log(`  ✅ ${s.nome}`,'ok');
+    } catch(e){ log(`  ❌ Erro: ${e.message}`,'err'); }
+  }
+
+  // Insere áreas
+  log(`\n🗺️ Inserindo ${AREAS.length} área(s) faccionada(s)...`,'info');
+  for(const a of AREAS){
+    try {
+      await addDoc(collection(db,'areas'),{...a,criadoEm:serverTimestamp()});
+      log(`  ✅ ${a.faccao} — ${a.nome}`,'ok');
+    } catch(e){ log(`  ❌ Erro: ${e.message}`,'err'); }
+  }
+
+  log('\n🎯 MIGRAÇÃO CONCLUÍDA!','ok');
+  log('Pode fechar esta página e abrir o mapa normalmente.','info');
+  btn.textContent='✅ CONCLUÍDO';
+};
+</script>
+</body>
+</html>
